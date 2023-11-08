@@ -46,13 +46,32 @@ async function run() {
       res.send(result);
 
   })
-
     // Insert food
     app.post('/foods', async (req, res) => {
       const newFood = req.body;
       console.log(newFood);
       const result = await foodCollection.insertOne(newFood);
       res.send(result);
+  })
+  app.put('/food/:id', async(req,res) => {
+    const id = req.params.id;
+      const filter = {_id: new ObjectId(id)}
+      const options = {upsert:true};
+      const updatedFood = req.body;
+      const food = {
+          $set:{
+            name: updatedFood.name,
+            category: updatedFood.category,
+            price: updatedFood.price,
+            quantity:updatedFood.quantity,
+            description:updatedFood.description,
+            origin:updatedFood.origin,
+            photo: updatedFood.photo
+          }
+      }
+      const result = await foodCollection.updateOne(filter,food,options)
+      res.send(result);
+
   })
 
     await client.db("admin").command({ ping: 1 });
