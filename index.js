@@ -46,6 +46,19 @@ async function run() {
       res.send(result);
 
   })
+  // Food my User
+  app.get('/my-food-email', async (req, res) => {
+    const userEmail = req.query.userEmail; 
+    const query = { userEmail }; 
+  
+    try {
+      const foodItems = await foodCollection.find(query).toArray();
+      res.json(foodItems);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'An error occurred while fetching cart items.' });
+    }
+  });
    // pagination
    app.get('/foodsCount', async (req,res) => {
     const count = await foodCollection.estimatedDocumentCount();
