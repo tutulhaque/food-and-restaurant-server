@@ -9,7 +9,11 @@ const app= express();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+app.use(cors({
+  origin:['https://food-and-restaurant-f7f9f.web.app','http://localhost:5173'],
+  credentials:true
+
+}));
 app.use(express.json());
 
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
@@ -36,14 +40,17 @@ async function run() {
 
 
 
-    // Auth related API
+    // JWT-Auth related API
     app.post('/jwt', async (req, res) => {
       const user = req.body;
       console.log(user)
-      const token = jwt.sign(user,'secret',{expiresIn:'1h'})
-      res.send(token);
-
-
+      const token = jwt.sign(user,process.env.ACCESS_TOKEN,{expiresIn:'1h'})
+      res
+      .cookie('token',token,{
+        httpOnly:true,
+        secure:false
+      })
+      .send({success:true});
     })
 
     // Food my User
@@ -121,8 +128,8 @@ async function run() {
 
     // add-Food
     app.get('/cart-by-email', async (req, res) => {
-        const email = req.query.email; // Get the user's email from the query parameter
-        const query = { email }; // Define the query to find cart items for the specified email
+        const email = req.query.email; 
+        const query = { email };
       
         try {
           const cartItems = await addToCart.find(query).toArray();
