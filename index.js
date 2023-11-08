@@ -1,6 +1,8 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config()
+var jwt = require('jsonwebtoken');
+var token = jwt.sign({ foo: 'bar' }, 'shhhhh');
 
 
 const app= express();
@@ -29,8 +31,34 @@ async function run() {
     const categoryCollection = client.db('FoodStore').collection('category');
     const foodCollection = client.db('FoodStore').collection('food');
     const addToCart = client.db('FoodStore').collection('cart');
+    const userCollection = client.db('FoodStore').collection('users');
     // Send a ping to confirm a successful connection
 
+
+
+    // Auth related API
+    app.post('/jwt', async (req, res) => {
+      const user = req.body;
+      console.log(user)
+      const token = jwt.sign(user,'secret',{expiresIn:'1h'})
+      res.send(token);
+
+
+    })
+
+    // Food my User
+    app.get('/my-food-email', async (req, res) => {
+      const userEmail = req.query.userEmail; 
+      const query = { userEmail }; 
+    
+      try {
+        const foodItems = await foodCollection.find(query).toArray();
+        res.json(foodItems);
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'An error occurred while fetching cart items.' });
+      }
+    });
     // User insert
     app.post('/users', async (req, res) => {
       const newUser = req.body;
@@ -39,87 +67,94 @@ async function run() {
       res.send(result);
   })
     // User Insert
+    // Food By User
+    // food Query
+     app.get('/foods', async(req,res) => {
+      const page = parseInt(req.query.page);
+        const size = parseInt(req.query.size);
+        const cursor = foodCollection.find().skip(page*size).limit(size);
+        console.log('pagination query',req.query);
+        const result = await cursor.toArray();
+        res.send(result);
+    })
+    // pagination
+    app.get('/foodsCount', async (req,res) => {
+      const count = await foodCollection.estimatedDocumentCount();
+      res.send({count});
+    })
+
+
     app.get('/food/:id', async(req,res)=> {
-      const id = req.params.id;
-      const query = {_id: new ObjectId(id)}
-      const result = await foodCollection.findOne(query);
-      res.send(result);
+        const id = req.params.id;
+        const query = {_id: new ObjectId(id)}
+        const result = await foodCollection.findOne(query);
+        res.send(result);
 
-  })
-  // Food my User
-  app.get('/my-food-email', async (req, res) => {
-    const userEmail = req.query.userEmail; 
-    const query = { userEmail }; 
-  
-    try {
-      const foodItems = await foodCollection.find(query).toArray();
-      res.json(foodItems);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'An error occurred while fetching cart items.' });
-    }
-  });
-   // pagination
-   app.get('/foodsCount', async (req,res) => {
-    const count = await foodCollection.estimatedDocumentCount();
-    res.send({count});
-  })
-    // Insert food
+    })
+
     app.post('/foods', async (req, res) => {
-      const newFood = req.body;
-      console.log(newFood);
-      const result = await foodCollection.insertOne(newFood);
-      res.send(result);
-  })
-  app.put('/food/:id', async(req,res) => {
-    const id = req.params.id;
-      const filter = {_id: new ObjectId(id)}
-      const options = {upsert:true};
-      const updatedFood = req.body;
-      const food = {
-          $set:{
-            name: updatedFood.name,
-            category: updatedFood.category,
-            price: updatedFood.price,
-            quantity:updatedFood.quantity,
-            description:updatedFood.description,
-            origin:updatedFood.origin,
-            photo: updatedFood.photo
-          }
-      }
-      const result = await foodCollection.updateOne(filter,food,options)
-      res.send(result);
+        const newFood = req.body;
+        console.log(newFood);
+        const result = await foodCollection.insertOne(newFood);
+        res.send(result);
+    })
+    app.put('/food/:id', async(req,res) => {
+      const id = req.params.id;
+        const filter = {_id: new ObjectId(id)}
+        const options = {upsert:true};
+        const updatedFood = req.body;
+        const food = {
+            $set:{
+              name: updatedFood.name,
+              category: updatedFood.category,
+              price: updatedFood.price,
+              quantity:updatedFood.quantity,
+              description:updatedFood.description,
+              origin:updatedFood.origin,
+              photo: updatedFood.photo
+            }
+        }
+        const result = await foodCollection.updateOne(filter,food,options)
+        res.send(result);
 
-  })
+    })
 
-  // Food ordered
-  app.get('/cart-by-email', async (req, res) => {
-    const email = req.query.email; // Get the user's email from the query parameter
-    const query = { email }; // Define the query to find cart items for the specified email
-  
-    try {
-      const cartItems = await addToCart.find(query).toArray();
-      res.json(cartItems);
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'An error occurred while fetching cart items.' });
-    }
-  });
+    // add-Food
+    app.get('/cart-by-email', async (req, res) => {
+        const email = req.query.email; // Get the user's email from the query parameter
+        const query = { email }; // Define the query to find cart items for the specified email
+      
+        try {
+          const cartItems = await addToCart.find(query).toArray();
+          res.json(cartItems);
+        } catch (error) {
+          console.error(error);
+          res.status(500).json({ error: 'An error occurred while fetching cart items.' });
+        }
+      });
 
-  app.post('/add-to-cart', async (req, res) => {
-    const newCart = req.body;
-    console.log(newCart);
-    const result = await addToCart.insertOne(newCart);
-    res.send(result);
-})
+    //   app.post('/add-to-cart', async (req, res) => {
+    //     const newCart = req.body;
+    //     console.log(newCart);
+    //     const result = await addToCart.insertOne(newCart);
+    //     res.send(result);
+    // })
 
-// delete
-app.delete('/add-to-cart/:id', async(req,res)=> {
-  const id = req.params.id;
-  const query = {_id: new ObjectId(id)}
-  const result = await addToCart.deleteOne(query);
-  res.send(result);
-})
+    app.post('/add-to-cart', async (req, res) => {
+        const newCart = req.body;
+        console.log(newCart);
+        const result = await addToCart.insertOne(newCart);
+        res.send(result);
+    })
+    
+    app.delete('/add-to-cart/:id', async(req,res)=> {
+        const id = req.params.id;
+        const query = {_id: new ObjectId(id)}
+        const result = await addToCart.deleteOne(query);
+        res.send(result);
+    })
+
+
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -132,7 +167,7 @@ run().catch(console.dir);
 
 
 app.get('/', (req,res) => {
-    res.send("Food and apprearl making server is running")
+    res.send("Food and Restaurant server is running")
 })
 app.listen(port, () => {
     console.log(`Food Server is running on port: ${port}`)
