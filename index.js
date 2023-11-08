@@ -91,6 +91,13 @@ async function run() {
       res.send(result);
 
   })
+  // Food ordered
+  app.post('/add-to-cart', async (req, res) => {
+    const newCart = req.body;
+    console.log(newCart);
+    const result = await addToCart.insertOne(newCart);
+    res.send(result);
+})
 
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
