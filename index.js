@@ -91,7 +91,21 @@ async function run() {
       res.send(result);
 
   })
+
   // Food ordered
+  app.get('/cart-by-email', async (req, res) => {
+    const email = req.query.email; // Get the user's email from the query parameter
+    const query = { email }; // Define the query to find cart items for the specified email
+  
+    try {
+      const cartItems = await addToCart.find(query).toArray();
+      res.json(cartItems);
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'An error occurred while fetching cart items.' });
+    }
+  });
+  
   app.post('/add-to-cart', async (req, res) => {
     const newCart = req.body;
     console.log(newCart);
