@@ -105,12 +105,20 @@ async function run() {
       res.status(500).json({ error: 'An error occurred while fetching cart items.' });
     }
   });
-  
+
   app.post('/add-to-cart', async (req, res) => {
     const newCart = req.body;
     console.log(newCart);
     const result = await addToCart.insertOne(newCart);
     res.send(result);
+})
+
+// delete
+app.delete('/add-to-cart/:id', async(req,res)=> {
+  const id = req.params.id;
+  const query = {_id: new ObjectId(id)}
+  const result = await addToCart.deleteOne(query);
+  res.send(result);
 })
 
     await client.db("admin").command({ ping: 1 });
